@@ -1,0 +1,208 @@
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import type {
+  ArtifactStatus,
+  ArtifactType,
+  EngineeringArtifact,
+  EngineeringArtifactFile,
+  EngineeringConfig,
+} from "@engineering-toolkit/core";
+import {
+  ARTIFACT_TYPE_TO_DOCUMENT_KEY,
+  createArtifactId,
+  nowIso,
+  padSequence,
+  slugify,
+} from "@engineering-toolkit/core";
+import { render, type TemplateData, type TemplateName } from "@engineering-toolkit/templates";
+
+export interface CreateArtifactInput {
+  rootDir: string;
+  config: EngineeringConfig;
+  type: ArtifactType;
+  title: string;
+  owners?: string[];
+  tags?: string[];
+  relatedArtifacts?: string[];
+  status?: ArtifactStatus;
+  body?: string;
+  templateName?: TemplateName;
+  templateData?: TemplateData;
+}
+
+export interface CreateArtifactResult {
+  absolutePath: string;
+  relativePath: string;
+  meta: EngineeringArtifact;
+}
+
+const SEQUENCE_PATTERN = /^(\d{4})-/;
+
+export const getDocumentDir = (
+  rootDir: string,
+  config: EngineeringConfig,
+  type: ArtifactType,
+): string => {
+  const key = ARTIFACT_TYPE_TO_DOCUMENT_KEY[type];
+  return join(rootDir, config.documents[key]);
+};
+
+export const nextSequence = (
+  rootDir: string,
+  config: EngineeringConfig,
+  type: ArtifactType,
+): number => {
+  const dir = getDocumentDir(rootDir, config, type);
+
+  if (!existsSync(dir)) {
+    return 1;
+  }
+
+  const sequences = readdirSync(dir)
+    .map((file) => SEQUENCE_PATTERN.exec(file)?.[1])
+    .filter((value): value is string => Boolean(value))
+    .map((value) => Number.parseInt(value, 10));
+
+  if (sequences.length === 0) {
+    return 1;
+  }
+
+  return Math.max(...sequences) + 1;
+};
+
+const serializeArtifact = (meta: EngineeringArtifact, body: string): string => {
+  const frontmatter = stringifyYaml({
+    id: meta.id,
+    type: meta.type,
+    title: meta.title,
+    status: meta.status,
+    owners: meta.owners,
+    createdAt: meta.createdAt,
+    updatedAt: meta.updatedAt,
+    tags: meta.tags,
+    relatedArtifacts: meta.relatedArtifacts,
+  }).trimEnd();
+
+  return `---\n${frontmatter}\n---\n\n${body.trim()}\n`;
+};
+
+export const parseArtifactFile = (
+  absolutePath: string,
+): EngineeringArtifactFile | null => {
+  const raw = readFileSync(absolutePath, "utf8");
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/.exec(raw);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, frontmatter, body] = match;
+  const parsed = parseYaml(frontmatter ?? "") as Partial<EngineeringArtifact>;
+
+  if (!parsed.id || !parsed.type || !parsed.title) {
+    return null;
+  }
+
+  const meta: EngineeringArtifact = {
+    id: parsed.id,
+    type: parsed.type,
+    title: parsed.title,
+    status: parsed.status ?? "draft",
+    owners: parsed.owners ?? [],
+    createdAt: parsed.createdAt ?? nowIso(),
+    updatedAt: parsed.updatedAt ?? nowIso(),
+    tags: parsed.tags ?? [],
+    relatedArtifacts: parsed.relatedArtifacts ?? [],
+  };
+
+  return {
+    path: absolutePath,
+    meta,
+    body: (body ?? "").trim(),
+  };
+};
+
+export const listArtifacts = (
+  rootDir: string,
+  config: EngineeringConfig,
+  type?: ArtifactType,
+): EngineeringArtifactFile[] => {
+  const types: ArtifactType[] = type
+    ? [type]
+    : ["decision", "plan", "review", "risk", "runbook"];
+
+  const artifacts: EngineeringArtifactFile[] = [];
+
+  for (const artifactType of types) {
+    const dir = getDocumentDir(rootDir, config, artifactType);
+
+    if (!existsSync(dir)) {
+      continue;
+    }
+
+    const files = readdirSync(dir)
+      .filter((file) => file.endsWith(".md"))
+      .sort();
+
+    for (const file of files) {
+      const absolutePath = join(dir, file);
+      const artifact = parseArtifactFile(absolutePath);
+
+      if (artifact) {
+        artifacts.push(artifact);
+      }
+    }
+  }
+
+  return artifacts;
+};
+
+export const createArtifact = (
+  input: CreateArtifactInput,
+): CreateArtifactResult => {
+  const sequence = nextSequence(input.rootDir, input.config, input.type);
+  const slug = slugify(input.title);
+  const fileName = `${padSequence(sequence)}-${slug}.md`;
+  const documentDir = getDocumentDir(input.rootDir, input.config, input.type);
+  const absolutePath = join(documentDir, fileName);
+  const timestamp = nowIso();
+
+  const meta: EngineeringArtifact = {
+    id: createArtifactId(input.type, sequence, input.title),
+    type: input.type,
+    title: input.title,
+    status: input.status ?? "draft",
+    owners: input.owners ?? [],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    tags: input.tags ?? [],
+    relatedArtifacts: input.relatedArtifacts ?? [],
+  };
+
+  const templateName =
+    input.templateName ??
+    (input.type === "decision" || input.type === "plan" || input.type === "review"
+      ? input.type
+      : undefined);
+
+  const body =
+    input.body ??
+    (templateName
+      ? render(templateName, input.templateData ?? {})
+      : `# ${input.title}\n`);
+
+  mkdirSync(documentDir, { recursive: true });
+  writeFileSync(absolutePath, serializeArtifact(meta, body), "utf8");
+
+  const relativePath = join(
+    input.config.documents[ARTIFACT_TYPE_TO_DOCUMENT_KEY[input.type]],
+    fileName,
+  );
+
+  return {
+    absolutePath,
+    relativePath,
+    meta,
+  };
+};

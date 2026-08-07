@@ -1,0 +1,32 @@
+{
+  "name": "@engineering-toolkit/artifacts",
+  "version": "0.1.0",
+  "description": "Create and manage engineering artifacts",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@engineering-toolkit/config": "workspace:*",
+    "@engineering-toolkit/core": "workspace:*",
+    "@engineering-toolkit/templates": "workspace:*",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

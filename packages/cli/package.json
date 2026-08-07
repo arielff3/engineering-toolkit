@@ -1,0 +1,39 @@
+{
+  "name": "@engineering-toolkit/cli",
+  "version": "0.1.0",
+  "description": "CLI for Engineering Toolkit",
+  "type": "module",
+  "bin": {
+    "eng": "./dist/index.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@engineering-toolkit/artifacts": "workspace:*",
+    "@engineering-toolkit/checks": "workspace:*",
+    "@engineering-toolkit/config": "workspace:*",
+    "@engineering-toolkit/core": "workspace:*",
+    "@engineering-toolkit/templates": "workspace:*",
+    "@inquirer/prompts": "^7.2.1",
+    "commander": "^12.1.0",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

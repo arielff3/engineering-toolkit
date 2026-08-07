@@ -1,0 +1,18 @@
+version: 1
+
+project:
+  name: demo-project
+
+documents:
+  decisions: docs/decisions
+  plans: docs/plans
+  reviews: docs/reviews
+  risks: docs/risks
+  runbooks: docs/runbooks
+
+checks:
+  rollback: required
+  owner: required
+  observability: required
+  testing: required
+  decisionDocument: required
