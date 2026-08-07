@@ -9,6 +9,10 @@ export interface ListOptions {
 }
 
 const artifactTypes = [
+  "vision",
+  "roadmap",
+  "research",
+  "brief",
   "decision",
   "plan",
   "review",

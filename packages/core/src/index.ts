@@ -1,4 +1,8 @@
 export type ArtifactType =
+  | "vision"
+  | "roadmap"
+  | "research"
+  | "brief"
   | "decision"
   | "plan"
   | "review"
@@ -47,6 +51,10 @@ export interface EngineeringArtifactFile {
 }
 
 export interface EngineeringDocumentsConfig {
+  visions: string;
+  roadmaps: string;
+  research: string;
+  briefs: string;
   decisions: string;
   plans: string;
   reviews: string;
@@ -62,13 +70,35 @@ export interface EngineeringChecksConfig {
   decisionDocument: CheckRequirement;
 }
 
+export type InteractiveCommand =
+  | "create"
+  | "decide"
+  | "plan"
+  | "review"
+  | "attach";
+
+export const INTERACTIVE_COMMANDS: InteractiveCommand[] = [
+  "create",
+  "decide",
+  "plan",
+  "review",
+  "attach",
+];
+
+export type EngineeringInteractiveConfig = Record<InteractiveCommand, boolean>;
+
 export interface EngineeringConfig {
   version: number;
+  workspace: {
+    name: string;
+    attachedRepository?: string;
+  };
   project: {
     name: string;
   };
   documents: EngineeringDocumentsConfig;
   checks: EngineeringChecksConfig;
+  interactive: EngineeringInteractiveConfig;
 }
 
 export interface EngineeringCheck {
@@ -82,6 +112,10 @@ export const ARTIFACT_TYPE_TO_DOCUMENT_KEY: Record<
   ArtifactType,
   keyof EngineeringDocumentsConfig
 > = {
+  vision: "visions",
+  roadmap: "roadmaps",
+  research: "research",
+  brief: "briefs",
   decision: "decisions",
   plan: "plans",
   review: "reviews",

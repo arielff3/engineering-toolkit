@@ -6,10 +6,11 @@ import {
   getConfigPath,
   getEngineeringDir,
 } from "@engineering-toolkit/config";
+import { getAllBuiltInTemplates } from "@engineering-toolkit/templates";
 
 export interface InitOptions {
   rootDir: string;
-  projectName: string;
+  workspaceName: string;
   force?: boolean;
 }
 
@@ -46,7 +47,7 @@ A change is done when:
 };
 
 export const initProject = (options: InitOptions): string[] => {
-  const { rootDir, projectName, force = false } = options;
+  const { rootDir, workspaceName, force = false } = options;
   const created: string[] = [];
   const engineeringDir = getEngineeringDir(rootDir);
   const configPath = getConfigPath(rootDir);
@@ -60,7 +61,7 @@ export const initProject = (options: InitOptions): string[] => {
   mkdirSync(engineeringDir, { recursive: true });
   created.push(engineeringDir);
 
-  const config = createDefaultConfig(projectName);
+  const config = createDefaultConfig(workspaceName);
   writeFileSync(configPath, configToYaml(config), "utf8");
   created.push(configPath);
 
@@ -71,6 +72,17 @@ export const initProject = (options: InitOptions): string[] => {
     const filePath = join(standardsDir, fileName);
     writeFileSync(filePath, contents, "utf8");
     created.push(filePath);
+  }
+
+  const templatesDir = join(engineeringDir, "templates");
+  mkdirSync(templatesDir, { recursive: true });
+
+  for (const [name, contents] of Object.entries(getAllBuiltInTemplates())) {
+    const filePath = join(templatesDir, `${name}.md`);
+    if (!existsSync(filePath) || force) {
+      writeFileSync(filePath, contents, "utf8");
+      created.push(filePath);
+    }
   }
 
   const documentDirs = Object.values(config.documents).map((relative) =>

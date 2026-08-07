@@ -123,14 +123,24 @@ export const parseArtifactFile = (
   };
 };
 
+const ARTIFACT_TYPES: ArtifactType[] = [
+  "vision",
+  "roadmap",
+  "research",
+  "brief",
+  "decision",
+  "plan",
+  "review",
+  "risk",
+  "runbook",
+];
+
 export const listArtifacts = (
   rootDir: string,
   config: EngineeringConfig,
   type?: ArtifactType,
 ): EngineeringArtifactFile[] => {
-  const types: ArtifactType[] = type
-    ? [type]
-    : ["decision", "plan", "review", "risk", "runbook"];
+  const types: ArtifactType[] = type ? [type] : ARTIFACT_TYPES;
 
   const artifacts: EngineeringArtifactFile[] = [];
 
@@ -158,6 +168,15 @@ export const listArtifacts = (
   return artifacts;
 };
 
+export const getArtifactById = (
+  rootDir: string,
+  config: EngineeringConfig,
+  id: string,
+): EngineeringArtifactFile | null => {
+  const artifacts = listArtifacts(rootDir, config);
+  return artifacts.find((artifact) => artifact.meta.id === id) ?? null;
+};
+
 export const createArtifact = (
   input: CreateArtifactInput,
 ): CreateArtifactResult => {
@@ -180,17 +199,13 @@ export const createArtifact = (
     relatedArtifacts: input.relatedArtifacts ?? [],
   };
 
-  const templateName =
-    input.templateName ??
-    (input.type === "decision" || input.type === "plan" || input.type === "review"
-      ? input.type
-      : undefined);
+  const templateName = input.templateName ?? (input.type as TemplateName);
 
   const body =
     input.body ??
-    (templateName
-      ? render(templateName, input.templateData ?? {})
-      : `# ${input.title}\n`);
+    render(templateName, input.templateData ?? {}, {
+      rootDir: input.rootDir,
+    });
 
   mkdirSync(documentDir, { recursive: true });
   writeFileSync(absolutePath, serializeArtifact(meta, body), "utf8");

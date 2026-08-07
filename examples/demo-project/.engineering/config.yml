@@ -1,9 +1,16 @@
 version: 1
 
+workspace:
+  name: demo-project
+
 project:
   name: demo-project
 
 documents:
+  visions: docs/visions
+  roadmaps: docs/roadmaps
+  research: docs/research
+  briefs: docs/briefs
   decisions: docs/decisions
   plans: docs/plans
   reviews: docs/reviews

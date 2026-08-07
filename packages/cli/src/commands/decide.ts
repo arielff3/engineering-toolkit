@@ -1,92 +1,221 @@
 import { input, confirm } from "@inquirer/prompts";
 import { createArtifact } from "@engineering-toolkit/artifacts";
 import { loadConfig } from "@engineering-toolkit/config";
+import type { ArtifactStatus } from "@engineering-toolkit/core";
+import { parseStatus, requireFields, splitList } from "../utils/flags";
+
+export interface DecideInput {
+  title: string;
+  problem: string;
+  alternatives: string;
+  decision: string;
+  rollback: string;
+  drivers?: string;
+  consequences?: string;
+  risks?: string;
+  context?: string;
+  owner?: string;
+  tags?: string[];
+  related?: string[];
+  status?: ArtifactStatus;
+}
 
 export interface DecideOptions {
   rootDir: string;
+  defaults?: Partial<DecideInput>;
 }
+
+export const decideFromInput = (
+  rootDir: string,
+  inputData: DecideInput,
+): string => {
+  requireFields(
+    {
+      title: inputData.title,
+      problem: inputData.problem,
+      alternatives: inputData.alternatives,
+      decision: inputData.decision,
+      rollback: inputData.rollback,
+    },
+    ["title", "problem", "alternatives", "decision", "rollback"],
+  );
+
+  const config = loadConfig(rootDir);
+  const title = inputData.title.trim();
+  const problem = inputData.problem.trim();
+  const owner = inputData.owner?.trim() ?? "";
+
+  const result = createArtifact({
+    rootDir,
+    config,
+    type: "decision",
+    title,
+    owners: owner ? [owner] : [],
+    tags: inputData.tags ?? [],
+    relatedArtifacts: inputData.related ?? [],
+    status: inputData.status ?? "accepted",
+    templateName: "decision",
+    templateData: {
+      context: (inputData.context ?? "").trim() || problem,
+      problem,
+      drivers: (inputData.drivers ?? "").trim(),
+      alternatives: inputData.alternatives.trim(),
+      decision: inputData.decision.trim(),
+      consequences: (inputData.consequences ?? "").trim(),
+      risks: (inputData.risks ?? "").trim(),
+      rollback: inputData.rollback.trim(),
+    },
+  });
+
+  return result.relativePath;
+};
 
 export const decideCommand = async (
   options: DecideOptions,
 ): Promise<string> => {
-  const config = loadConfig(options.rootDir);
+  const defaults = options.defaults ?? {};
 
   const title = await input({
     message: "Decision title",
+    default: defaults.title ?? "",
     validate: (value) => (value.trim() ? true : "Please provide a title"),
   });
 
   const problem = await input({
     message: "What problem are you solving?",
+    default: defaults.problem ?? "",
     validate: (value) => (value.trim() ? true : "Please describe the problem"),
   });
 
   const alternatives = await input({
     message: "What alternatives did you consider?",
+    default: defaults.alternatives ?? "",
     validate: (value) =>
       value.trim() ? true : "Please list the alternatives",
   });
 
   const drivers = await input({
     message: "What are the decision drivers / trade-offs?",
-    default: "",
+    default: defaults.drivers ?? "",
   });
 
   const decision = await input({
     message: "What is the decision?",
+    default: defaults.decision ?? "",
     validate: (value) => (value.trim() ? true : "Please describe the decision"),
   });
 
   const consequences = await input({
     message: "What is the impact / consequences?",
-    default: "",
+    default: defaults.consequences ?? "",
   });
 
   const risks = await input({
     message: "What are the risks?",
-    default: "",
+    default: defaults.risks ?? "",
   });
 
   const rollback = await input({
     message: "Is there a rollback plan? Describe it",
+    default: defaults.rollback ?? "",
     validate: (value) =>
       value.trim() ? true : "Please describe the rollback plan",
   });
 
   const owner = await input({
     message: "Owner (optional)",
-    default: "",
+    default: defaults.owner ?? "",
   });
 
   const context = await input({
     message: "Short context (optional)",
-    default: "",
+    default: defaults.context ?? "",
   });
 
   const accepted = await confirm({
     message: "Mark as accepted?",
-    default: true,
+    default: defaults.status ? defaults.status === "accepted" : true,
   });
 
-  const result = createArtifact({
-    rootDir: options.rootDir,
-    config,
-    type: "decision",
-    title: title.trim(),
-    owners: owner.trim() ? [owner.trim()] : [],
+  return decideFromInput(options.rootDir, {
+    title,
+    problem,
+    alternatives,
+    decision,
+    rollback,
+    drivers,
+    consequences,
+    risks,
+    context,
+    owner,
+    tags: defaults.tags ?? [],
+    related: defaults.related ?? [],
     status: accepted ? "accepted" : "proposed",
-    templateName: "decision",
-    templateData: {
-      context: context.trim() || problem.trim(),
-      problem: problem.trim(),
-      drivers: drivers.trim(),
-      alternatives: alternatives.trim(),
-      decision: decision.trim(),
-      consequences: consequences.trim(),
-      risks: risks.trim(),
-      rollback: rollback.trim(),
-    },
   });
-
-  return result.relativePath;
 };
+
+export const decideDefaultsFromFlags = (flags: {
+  title?: string;
+  problem?: string;
+  alternatives?: string;
+  decision?: string;
+  rollback?: string;
+  drivers?: string;
+  consequences?: string;
+  risks?: string;
+  context?: string;
+  owner?: string;
+  tag?: string | string[];
+  related?: string | string[];
+}): Partial<DecideInput> => ({
+  title: flags.title,
+  problem: flags.problem,
+  alternatives: flags.alternatives,
+  decision: flags.decision,
+  rollback: flags.rollback,
+  drivers: flags.drivers,
+  consequences: flags.consequences,
+  risks: flags.risks,
+  context: flags.context,
+  owner: flags.owner,
+  tags: splitList(flags.tag),
+  related: splitList(flags.related),
+});
+
+export const decideFromFlags = (
+  rootDir: string,
+  flags: {
+    title?: string;
+    problem?: string;
+    alternatives?: string;
+    decision?: string;
+    rollback?: string;
+    drivers?: string;
+    consequences?: string;
+    risks?: string;
+    context?: string;
+    owner?: string;
+    tag?: string | string[];
+    related?: string | string[];
+    status?: string;
+  },
+): string =>
+  decideFromInput(rootDir, {
+    title: flags.title ?? "",
+    problem: flags.problem ?? "",
+    alternatives: flags.alternatives ?? "",
+    decision: flags.decision ?? "",
+    rollback: flags.rollback ?? "",
+    drivers: flags.drivers,
+    consequences: flags.consequences,
+    risks: flags.risks,
+    context: flags.context,
+    owner: flags.owner,
+    tags: splitList(flags.tag),
+    related: splitList(flags.related),
+    status: parseStatus(
+      flags.status,
+      ["draft", "proposed", "accepted", "deprecated", "superseded"],
+      "accepted",
+    ),
+  });
