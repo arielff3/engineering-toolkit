@@ -2,6 +2,7 @@ import { input, confirm, select } from "@inquirer/prompts";
 import { createArtifact } from "@engineering-toolkit/artifacts";
 import { loadConfig } from "@engineering-toolkit/config";
 import { requireFields, splitList } from "../utils/flags";
+import { warnDroppedFields } from "../utils/warnings";
 
 export interface ReviewInput {
   title: string;
@@ -99,7 +100,7 @@ export const reviewFromInput = (
     },
   });
 
-  return result.relativePath;
+  return warnDroppedFields(rootDir, result).relativePath;
 };
 
 export const reviewCommand = async (

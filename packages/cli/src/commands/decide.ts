@@ -3,6 +3,7 @@ import { createDecisionArtifact } from "@engineering-toolkit/artifacts";
 import { loadConfig } from "@engineering-toolkit/config";
 import type { ArtifactStatus } from "@engineering-toolkit/core";
 import { parseStatus, requireFields, splitList } from "../utils/flags";
+import { warnDroppedFields } from "../utils/warnings";
 
 export interface DecideInput {
   title: string;
@@ -61,7 +62,7 @@ export const decideFromInput = (
     status: inputData.status ?? "accepted",
   });
 
-  return result.relativePath;
+  return warnDroppedFields(rootDir, result).relativePath;
 };
 
 export const decideCommand = async (

@@ -10,6 +10,7 @@ import {
 } from "@engineering-toolkit/templates";
 import { parseStatus, requireFields, splitList, toArray } from "../utils/flags";
 import { parseArtifactType } from "./list";
+import { warnDroppedFields } from "../utils/warnings";
 
 export interface CreateInput {
   type: ArtifactType;
@@ -94,7 +95,7 @@ export const createFromInput = (
     templateData: inputData.data ?? {},
   });
 
-  return result.relativePath;
+  return warnDroppedFields(rootDir, result).relativePath;
 };
 
 export const createFromFlags = (options: CreateOptions): string => {

@@ -1,4 +1,10 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -142,5 +148,83 @@ describe("artifacts", () => {
     const filePath = join(rootDir, "broken.md");
     writeFileSync(filePath, "# no frontmatter\n", "utf8");
     expect(parseArtifactFile(filePath)).toBeNull();
+  });
+});
+
+describe("createArtifact template drift", () => {
+  it("reports nothing when the built-in template covers every field", () => {
+    const { rootDir, config } = createProject();
+
+    const created = createArtifact({
+      rootDir,
+      config,
+      type: "research",
+      title: "Queue for checkout retries",
+      templateName: "research",
+      templateData: {
+        question: "SQS or RabbitMQ?",
+        options: "SQS, RabbitMQ",
+        findings: "SQS p99 is 40ms",
+        recommendation: "Start with SQS",
+      },
+    });
+
+    expect(created.droppedFields).toEqual([]);
+    expect(created.customTemplatePath).toBeUndefined();
+  });
+
+  it("reports fields an outdated custom template cannot render", () => {
+    const { rootDir, config } = createProject();
+
+    mkdirSync(join(rootDir, ".engineering", "templates"), { recursive: true });
+    writeFileSync(
+      join(rootDir, ".engineering", "templates", "research.md"),
+      "# Question\n\n{{question}}\n\n# Findings\n\n{{findings}}\n\n# Recommendation\n\n{{recommendation}}\n",
+      "utf8",
+    );
+
+    const created = createArtifact({
+      rootDir,
+      config,
+      type: "research",
+      title: "Queue for checkout retries",
+      templateName: "research",
+      templateData: {
+        question: "SQS or RabbitMQ?",
+        options: "SQS, RabbitMQ, Postgres-backed queue",
+        findings: "SQS p99 is 40ms",
+        tradeoffs: "SQS locks us to AWS",
+        openQuestions: "Ordering guarantees?",
+        recommendation: "Start with SQS",
+        decisionToInform: "Queue technology for checkout",
+      },
+    });
+
+    expect(created.droppedFields).toEqual([
+      "options",
+      "tradeoffs",
+      "openQuestions",
+      "decisionToInform",
+    ]);
+    expect(created.customTemplatePath).toContain("research.md");
+
+    const body = readFileSync(created.absolutePath, "utf8");
+    expect(body).toContain("SQS p99 is 40ms");
+    expect(body).not.toContain("Postgres-backed queue");
+  });
+
+  it("reports nothing when the body is supplied directly", () => {
+    const { rootDir, config } = createProject();
+
+    const created = createArtifact({
+      rootDir,
+      config,
+      type: "brief",
+      title: "Raw body",
+      body: "# Summary\n\nWritten by hand.",
+      templateData: { anything: "ignored" },
+    });
+
+    expect(created.droppedFields).toEqual([]);
   });
 });

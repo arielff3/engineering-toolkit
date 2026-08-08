@@ -3,10 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  findUnusedData,
+  getPlaceholderNames,
   getTemplate,
   getTemplateFields,
   humanizeFieldName,
   render,
+  resolveTemplate,
   resolveTemplateFields,
 } from "./index";
 
@@ -136,5 +139,82 @@ describe("getTemplateFields", () => {
       { name: "northStar", label: "North Star" },
       { name: "antiGoals", label: "Anti-goals" },
     ]);
+  });
+});
+
+describe("getPlaceholderNames", () => {
+  it("lists placeholders in order, without duplicates", () => {
+    expect(getPlaceholderNames("{{a}} {{b}}\n{{a}}")).toEqual(["a", "b"]);
+  });
+
+  it("returns an empty list for a template with no placeholders", () => {
+    expect(getPlaceholderNames("# Just a heading")).toEqual([]);
+  });
+});
+
+describe("findUnusedData", () => {
+  it("reports values the template cannot render", () => {
+    expect(
+      findUnusedData("# Question\n\n{{question}}", {
+        question: "SQS or RabbitMQ?",
+        tradeoffs: "SQS locks us to AWS",
+        openQuestions: "Ordering guarantees?",
+      }),
+    ).toEqual(["tradeoffs", "openQuestions"]);
+  });
+
+  it("ignores empty and whitespace-only values", () => {
+    expect(
+      findUnusedData("{{question}}", {
+        question: "Kept",
+        tradeoffs: "",
+        openQuestions: "   ",
+      }),
+    ).toEqual([]);
+  });
+
+  it("reports nothing when the template covers every key", () => {
+    expect(
+      findUnusedData("{{a}} {{b}}", { a: "one", b: "two" }),
+    ).toEqual([]);
+  });
+
+  it("catches a custom template that predates a new section", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "eng-drift-"));
+    tempDirs.push(rootDir);
+
+    mkdirSync(join(rootDir, ".engineering", "templates"), { recursive: true });
+    writeFileSync(
+      join(rootDir, ".engineering", "templates", "research.md"),
+      "# Question\n\n{{question}}\n\n# Findings\n\n{{findings}}\n",
+      "utf8",
+    );
+
+    const template = resolveTemplate("research", { rootDir });
+
+    expect(template.customPath).toContain("research.md");
+    expect(
+      findUnusedData(template.content, {
+        question: "SQS or RabbitMQ?",
+        options: "SQS, RabbitMQ, Postgres-backed queue",
+        findings: "SQS p99 is 40ms",
+        tradeoffs: "SQS locks us to AWS",
+        openQuestions: "Ordering guarantees?",
+        recommendation: "Start with SQS",
+        decisionToInform: "Queue technology for checkout",
+      }),
+    ).toEqual([
+      "options",
+      "tradeoffs",
+      "openQuestions",
+      "recommendation",
+      "decisionToInform",
+    ]);
+  });
+});
+
+describe("resolveTemplate", () => {
+  it("has no customPath when the built-in template is used", () => {
+    expect(resolveTemplate("research").customPath).toBeUndefined();
   });
 });

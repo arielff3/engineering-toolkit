@@ -388,6 +388,57 @@ export const resolveTemplateFields = (
   options: TemplateResolveOptions = {},
 ): TemplateField[] => getTemplateFields(getTemplate(name, options));
 
+export interface ResolvedTemplate {
+  name: TemplateName;
+  content: string;
+  customPath?: string;
+}
+
+export const resolveTemplate = (
+  name: TemplateName,
+  options: TemplateResolveOptions = {},
+): ResolvedTemplate => {
+  if (options.rootDir) {
+    const customPath = getCustomTemplatePath(options.rootDir, name);
+
+    if (existsSync(customPath)) {
+      return { name, content: readFileSync(customPath, "utf8"), customPath };
+    }
+  }
+
+  return { name, content: getBuiltInTemplate(name) };
+};
+
+export const getPlaceholderNames = (template: string): string[] => {
+  const names: string[] = [];
+
+  PLACEHOLDER_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null = PLACEHOLDER_PATTERN.exec(template);
+
+  while (match !== null) {
+    const name = match[1];
+
+    if (name && !names.includes(name)) {
+      names.push(name);
+    }
+
+    match = PLACEHOLDER_PATTERN.exec(template);
+  }
+
+  return names;
+};
+
+export const findUnusedData = (
+  template: string,
+  data: TemplateData,
+): string[] => {
+  const placeholders = new Set(getPlaceholderNames(template));
+
+  return Object.keys(data).filter(
+    (key) => (data[key] ?? "").trim() !== "" && !placeholders.has(key),
+  );
+};
+
 export const render = (
   name: TemplateName,
   data: TemplateData,

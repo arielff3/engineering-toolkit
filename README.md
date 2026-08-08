@@ -462,6 +462,23 @@ Every key is optional and falls back to the value above. Point `documents.*` any
 
 Placeholders use `{{name}}` syntax and render as `_TBD_` when no value is supplied.
 
+### Template drift
+
+A custom template you copied on `eng init` does not change when the built-in one does. If a later version adds a section, your copy still has the old placeholders — and an answer with nowhere to render would be lost.
+
+The CLI will not lose it silently. Whenever a command supplies a value the template has no placeholder for, it says so and names the file:
+
+```text
+Warning: 4 answer(s) were not written because the template has no placeholder for them.
+  Dropped: options, tradeoffs, openQuestions, decisionToInform
+  Template: .engineering/templates/research.md
+  This custom template is missing sections the built-in one has. Add {{placeholder}} for each dropped field, or delete the file to use the built-in template.
+```
+
+Two ways out: add the missing `{{placeholders}}` to your copy, or delete the file to fall back to the built-in template. The artifact is still written either way — dropping a section you deliberately removed is a valid customization, so this is a warning and not an error.
+
+The MCP create tools report the same thing as a `droppedFields` array in their result, so an assistant can pass it on instead of reporting success on a half-written artifact.
+
 ## Using it in CI
 
 `eng check --json` is designed for pipelines:

@@ -39,6 +39,12 @@ export const createArtifactHandler = (context: ToolContext) =>
     return {
       id: result.meta.id,
       path: toWorkspacePath(context.rootDir, result.absolutePath),
+      ...(result.droppedFields.length > 0
+        ? {
+            warning: `These fields were not written because the template has no placeholder for them: ${result.droppedFields.join(", ")}. Tell the user.`,
+            droppedFields: result.droppedFields,
+          }
+        : {}),
     };
   });
 

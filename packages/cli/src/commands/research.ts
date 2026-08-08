@@ -3,6 +3,7 @@ import { createArtifact } from "@engineering-toolkit/artifacts";
 import { loadConfig } from "@engineering-toolkit/config";
 import type { ArtifactStatus } from "@engineering-toolkit/core";
 import { parseStatus, requireFields, splitList } from "../utils/flags";
+import { warnDroppedFields } from "../utils/warnings";
 
 export interface ResearchInput {
   title: string;
@@ -67,7 +68,7 @@ export const researchFromInput = (
     },
   });
 
-  return result.relativePath;
+  return warnDroppedFields(rootDir, result).relativePath;
 };
 
 export const researchCommand = async (

@@ -16,7 +16,13 @@ import {
   padSequence,
   slugify,
 } from "@engineering-toolkit/core";
-import { render, type TemplateData, type TemplateName } from "@engineering-toolkit/templates";
+import {
+  findUnusedData,
+  renderTemplateString,
+  resolveTemplate,
+  type TemplateData,
+  type TemplateName,
+} from "@engineering-toolkit/templates";
 
 export interface CreateArtifactInput {
   rootDir: string;
@@ -36,6 +42,8 @@ export interface CreateArtifactResult {
   absolutePath: string;
   relativePath: string;
   meta: EngineeringArtifact;
+  droppedFields: string[];
+  customTemplatePath?: string;
 }
 
 const SEQUENCE_PATTERN = /^(\d{4})-/;
@@ -291,12 +299,19 @@ export const createArtifact = (
   };
 
   const templateName = input.templateName ?? (input.type as TemplateName);
+  const templateData = input.templateData ?? {};
 
-  const body =
-    input.body ??
-    render(templateName, input.templateData ?? {}, {
-      rootDir: input.rootDir,
-    });
+  let body = input.body;
+  let droppedFields: string[] = [];
+  let customTemplatePath: string | undefined;
+
+  if (body === undefined) {
+    const template = resolveTemplate(templateName, { rootDir: input.rootDir });
+
+    body = renderTemplateString(template.content, templateData);
+    droppedFields = findUnusedData(template.content, templateData);
+    customTemplatePath = template.customPath;
+  }
 
   mkdirSync(documentDir, { recursive: true });
   writeFileSync(absolutePath, serializeArtifact(meta, body), "utf8");
@@ -310,5 +325,7 @@ export const createArtifact = (
     absolutePath,
     relativePath,
     meta,
+    droppedFields,
+    ...(customTemplatePath ? { customTemplatePath } : {}),
   };
 };
