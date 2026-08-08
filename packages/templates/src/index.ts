@@ -64,21 +64,29 @@ const researchTemplate = `# Question
 
 {{question}}
 
-# Context
+# Why It Matters
 
 {{context}}
 
-# Findings
+# Options Compared
 
-{{findings}}
+{{options}}
 
-# Sources
+# Evidence
 
-{{sources}}
+{{evidence}}
+
+# Trade-offs
+
+{{tradeoffs}}
 
 # Recommendation
 
 {{recommendation}}
+
+# Decision To Inform
+
+{{decisionToInform}}
 `;
 
 const briefTemplate = `# Summary

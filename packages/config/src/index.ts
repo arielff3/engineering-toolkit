@@ -67,6 +67,7 @@ export const engineeringConfigSchema = z.object({
   interactive: z
     .object({
       create: z.boolean().default(true),
+      research: z.boolean().default(true),
       decide: z.boolean().default(true),
       plan: z.boolean().default(true),
       review: z.boolean().default(true),
@@ -75,6 +76,7 @@ export const engineeringConfigSchema = z.object({
     .passthrough()
     .default({
       create: true,
+      research: true,
       decide: true,
       plan: true,
       review: true,

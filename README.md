@@ -66,16 +66,19 @@ The rest of this README writes `eng` for brevity.
 # 1. Create a workspace (works in an existing repo or an empty folder)
 eng init
 
-# 2. Record a decision — prompts you through problem, alternatives, trade-offs, rollback
+# 2. Investigate the options — prompts you through question, options, evidence, recommendation
+eng research
+
+# 3. Record a decision — prompts you through problem, alternatives, trade-offs, rollback
 eng decide
 
-# 3. Plan the implementation
+# 4. Plan the implementation
 eng plan
 
-# 4. See what you have
+# 5. See what you have
 eng list
 
-# 5. Validate it
+# 6. Validate it
 eng check
 ```
 
@@ -228,17 +231,31 @@ eng attach                                             # prompts, pre-filled wit
 eng attach --repo https://github.com/my-org/my-project
 ```
 
-### `eng decide`, `eng plan`, `eng review`
+### `eng research`, `eng decide`, `eng plan`, `eng review`
 
-The three guided flows. Each one prompts you through its questions and writes an artifact.
+The four guided flows, in the order the work usually happens. Each one prompts you through its questions and writes an artifact.
 
 ```bash
+eng research # question, why it matters, options, evidence, trade-offs, recommendation
 eng decide   # problem, alternatives, trade-offs, decision, consequences, risks, rollback
 eng plan     # objective, scope, dependencies, tasks, testing, monitoring, rollout, rollback
 eng review   # context, analysis, checklist, risks, missing items, recommendation
 ```
 
+`eng research` is the step before committing to anything: it compares options and ends on a recommendation plus the decision that recommendation should inform. It writes status `draft` — a research artifact reports, it does not commit. When you act on it, run `eng decide` and point it back with `--related`.
+
 Every question also has a flag, so the same commands work in scripts and CI:
+
+```bash
+eng research \
+  --title "Queue for checkout retries" \
+  --question "SQS or RabbitMQ for retrying failed checkouts?" \
+  --options "SQS, RabbitMQ, Postgres-backed queue" \
+  --evidence "RabbitMQ needs a dedicated operator; SQS p99 is 40ms" \
+  --recommendation "Start with SQS" \
+  --decision-to-inform "Queue technology for checkout" \
+  --owner ariel
+```
 
 ```bash
 eng decide \
@@ -272,11 +289,12 @@ Required flags per command:
 
 | Command | Required |
 | --- | --- |
+| `eng research` | `--title --question --options --evidence --recommendation` |
 | `eng decide` | `--title --problem --alternatives --decision --rollback` |
 | `eng plan` | `--title --objective --testing --monitoring --rollback` |
 | `eng review` | `--title --context --review --recommendation` |
 
-Shared optional flags: `--owner`, `--tag` (repeatable or comma-separated), `--related`, `--status`, and `-C, --cwd <path>` to target another workspace. `eng review` always writes status `proposed`.
+Shared optional flags: `--owner`, `--tag` (repeatable or comma-separated), `--related`, `--status`, and `-C, --cwd <path>` to target another workspace. `eng research` also takes `--context` (why it matters), `--tradeoffs` and `--decision-to-inform`. `eng review` always writes status `proposed`.
 
 See [Interactive mode](#interactive-mode) for how the CLI decides whether to prompt.
 
@@ -317,7 +335,7 @@ Placeholders per template:
 | --- | --- |
 | `vision` | `vision`, `problem`, `audience`, `principles`, `success` |
 | `roadmap` | `goal`, `milestones`, `now`, `next`, `later` |
-| `research` | `question`, `context`, `findings`, `sources`, `recommendation` |
+| `research` | `question`, `context`, `options`, `evidence`, `tradeoffs`, `recommendation`, `decisionToInform` |
 | `brief` | `summary`, `context`, `requirements`, `constraints`, `openQuestions` |
 | `decision` | `context`, `problem`, `drivers`, `alternatives`, `decision`, `consequences`, `risks`, `rollback` |
 | `plan` | `objective`, `scope`, `outOfScope`, `dependencies`, `architecture`, `tasks`, `testing`, `monitoring`, `rollout`, `rollback` |
@@ -422,6 +440,7 @@ checks:
 
 interactive:
   create: true
+  research: true
   decide: true
   plan: true
   review: true

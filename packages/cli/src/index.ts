@@ -2,6 +2,11 @@ import { Command } from "commander";
 import { basename, resolve } from "node:path";
 import { initProject } from "./commands/init";
 import {
+  researchCommand,
+  researchDefaultsFromFlags,
+  researchFromFlags,
+} from "./commands/research";
+import {
   decideCommand,
   decideDefaultsFromFlags,
   decideFromFlags,
@@ -219,6 +224,62 @@ const main = async (): Promise<void> => {
             });
 
         console.log(`Attached repository: ${repository}`);
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : error);
+        process.exitCode = 1;
+      }
+    });
+
+  withInteractivityFlags(program.command("research"))
+    .description("Investigate options before deciding")
+    .option("--title <title>", "Research title")
+    .option("--question <text>", "Question you are trying to answer")
+    .option("--context <text>", "Why this matters")
+    .option("--options <text>", "Options compared")
+    .option("--evidence <text>", "Evidence found")
+    .option("--tradeoffs <text>", "Trade-offs")
+    .option("--recommendation <text>", "Recommendation")
+    .option(
+      "--decision-to-inform <text>",
+      "Decision this research should inform",
+    )
+    .option("--owner <owner>", "Owner")
+    .option("--tag <tag>", "Tag (repeatable or comma-separated)", (value, previous: string[]) => {
+      previous.push(value);
+      return previous;
+    }, [])
+    .option("--related <id>", "Related artifact id (repeatable)", (value, previous: string[]) => {
+      previous.push(value);
+      return previous;
+    }, [])
+    .option("--status <status>", "Status (default: draft)")
+    .option("-C, --cwd <path>", "Project directory", process.cwd())
+    .action(async (options) => {
+      try {
+        const rootDir = resolve(options.cwd);
+        const config = loadConfig(rootDir);
+
+        const mode: InteractivityInput = {
+          options,
+          config,
+          command: "research",
+          requiredFlags: [
+            "title",
+            "question",
+            "options",
+            "evidence",
+            "recommendation",
+          ],
+        };
+
+        const path = isNonInteractive(mode)
+          ? runFromFlags(mode, () => researchFromFlags(rootDir, options))
+          : await researchCommand({
+              rootDir,
+              defaults: researchDefaultsFromFlags(options),
+            });
+
+        console.log(`Research created: ${path}`);
       } catch (error) {
         console.error(error instanceof Error ? error.message : error);
         process.exitCode = 1;

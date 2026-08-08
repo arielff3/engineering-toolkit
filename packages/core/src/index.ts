@@ -72,6 +72,7 @@ export interface EngineeringChecksConfig {
 
 export type InteractiveCommand =
   | "create"
+  | "research"
   | "decide"
   | "plan"
   | "review"
@@ -79,6 +80,7 @@ export type InteractiveCommand =
 
 export const INTERACTIVE_COMMANDS: InteractiveCommand[] = [
   "create",
+  "research",
   "decide",
   "plan",
   "review",

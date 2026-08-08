@@ -105,6 +105,20 @@ describe("getTemplateFields", () => {
     expect(fields.map((field) => field.label)).toContain("Out of Scope");
   });
 
+  it("reads every section of the built-in research template", () => {
+    const fields = resolveTemplateFields("research");
+
+    expect(fields).toEqual([
+      { name: "question", label: "Question" },
+      { name: "context", label: "Why It Matters" },
+      { name: "options", label: "Options Compared" },
+      { name: "evidence", label: "Evidence" },
+      { name: "tradeoffs", label: "Trade-offs" },
+      { name: "recommendation", label: "Recommendation" },
+      { name: "decisionToInform", label: "Decision To Inform" },
+    ]);
+  });
+
   it("picks up sections added to a custom template", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "eng-fields-"));
     tempDirs.push(rootDir);
