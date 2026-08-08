@@ -1,4 +1,5 @@
 import { defineConfig } from "tsup";
+import pkg from "./package.json";
 
 export default defineConfig({
   entry: ["src/index.ts", "src/bin.ts"],
@@ -7,5 +8,9 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   splitting: false,
+  noExternal: [/^@engineering-toolkit\//],
+  define: {
+    __VERSION__: JSON.stringify(pkg.version),
+  },
   shims: true,
 });

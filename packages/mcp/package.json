@@ -1,7 +1,27 @@
 {
   "name": "@engineering-toolkit/mcp",
-  "version": "0.1.0",
-  "description": "Model Context Protocol server that exposes an Engineering Toolkit workspace to AI assistants",
+  "version": "0.2.0",
+  "description": "Model Context Protocol server that exposes an Engineering Toolkit workspace to AI assistants, so they can read the decisions, plans and risks a project already recorded.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "adr",
+    "architecture-decision-record",
+    "engineering",
+    "decision-records",
+    "llm"
+  ],
+  "homepage": "https://github.com/arielff3/engineering-toolkit#mcp-server",
+  "bugs": {
+    "url": "https://github.com/arielff3/engineering-toolkit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arielff3/engineering-toolkit.git",
+    "directory": "packages/mcp"
+  },
+  "license": "MIT",
   "type": "module",
   "bin": {
     "eng-mcp": "./dist/bin.js"
@@ -17,20 +37,27 @@
     }
   },
   "files": ["dist"],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
     "@engineering-toolkit/artifacts": "workspace:*",
     "@engineering-toolkit/checks": "workspace:*",
     "@engineering-toolkit/config": "workspace:*",
     "@engineering-toolkit/core": "workspace:*",
     "@engineering-toolkit/templates": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^3.24.1"
-  },
-  "devDependencies": {
     "@types/node": "^22.10.2",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2"

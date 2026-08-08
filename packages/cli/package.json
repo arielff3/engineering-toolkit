@@ -1,7 +1,27 @@
 {
   "name": "@engineering-toolkit/cli",
-  "version": "0.1.0",
-  "description": "CLI for Engineering Toolkit",
+  "version": "0.2.0",
+  "description": "Engineering decisions as code. Record decisions, plan implementations, review changes and validate them in CI, as versioned Markdown artifacts.",
+  "keywords": [
+    "adr",
+    "architecture-decision-record",
+    "engineering",
+    "decision-records",
+    "documentation",
+    "rfc",
+    "cli",
+    "devtools"
+  ],
+  "homepage": "https://github.com/arielff3/engineering-toolkit#readme",
+  "bugs": {
+    "url": "https://github.com/arielff3/engineering-toolkit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arielff3/engineering-toolkit.git",
+    "directory": "packages/cli"
+  },
+  "license": "MIT",
   "type": "module",
   "bin": {
     "eng": "./dist/index.js"
@@ -17,21 +37,28 @@
     }
   },
   "files": ["dist"],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.2.1",
+    "commander": "^12.1.0",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
     "@engineering-toolkit/artifacts": "workspace:*",
     "@engineering-toolkit/checks": "workspace:*",
     "@engineering-toolkit/config": "workspace:*",
     "@engineering-toolkit/core": "workspace:*",
     "@engineering-toolkit/templates": "workspace:*",
-    "@inquirer/prompts": "^7.2.1",
-    "commander": "^12.1.0",
-    "yaml": "^2.6.1"
-  },
-  "devDependencies": {
     "@types/node": "^22.10.2",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2"

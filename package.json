@@ -7,7 +7,9 @@
     "build": "pnpm -r run build",
     "clean": "pnpm -r run clean",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "release": "pnpm clean && pnpm build && pnpm test && pnpm -r publish --access public",
+    "release:dry": "pnpm clean && pnpm build && pnpm test && pnpm -r publish --access public --dry-run --no-git-checks"
   },
   "engines": {
     "node": ">=18",

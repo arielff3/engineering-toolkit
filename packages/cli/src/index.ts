@@ -34,6 +34,7 @@ import {
   isTtySession,
   type InteractivityInput,
 } from "./utils/flags";
+import { VERSION } from "./version";
 
 const withInteractivityFlags = (command: Command): Command =>
   command
@@ -96,7 +97,7 @@ const main = async (): Promise<void> => {
   program
     .name("eng")
     .description("Engineering Toolkit — engineering decisions as code")
-    .version("0.1.0");
+    .version(VERSION);
 
   type WorkspaceFlags = {
     name?: string;

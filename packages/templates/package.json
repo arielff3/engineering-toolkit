@@ -1,6 +1,7 @@
 {
   "name": "@engineering-toolkit/templates",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "private": true,
   "description": "Markdown templates for Engineering Toolkit artifacts",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -13,7 +14,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
