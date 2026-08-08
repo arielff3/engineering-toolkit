@@ -1,5 +1,5 @@
 import { input, confirm } from "@inquirer/prompts";
-import { createArtifact } from "@engineering-toolkit/artifacts";
+import { createDecisionArtifact } from "@engineering-toolkit/artifacts";
 import { loadConfig } from "@engineering-toolkit/config";
 import type { ArtifactStatus } from "@engineering-toolkit/core";
 import { parseStatus, requireFields, splitList } from "../utils/flags";
@@ -41,30 +41,24 @@ export const decideFromInput = (
   );
 
   const config = loadConfig(rootDir);
-  const title = inputData.title.trim();
-  const problem = inputData.problem.trim();
   const owner = inputData.owner?.trim() ?? "";
 
-  const result = createArtifact({
+  const result = createDecisionArtifact({
     rootDir,
     config,
-    type: "decision",
-    title,
+    title: inputData.title,
+    problem: inputData.problem,
+    alternatives: inputData.alternatives,
+    decision: inputData.decision,
+    rollback: inputData.rollback,
+    context: inputData.context,
+    drivers: inputData.drivers,
+    consequences: inputData.consequences,
+    risks: inputData.risks,
     owners: owner ? [owner] : [],
     tags: inputData.tags ?? [],
     relatedArtifacts: inputData.related ?? [],
     status: inputData.status ?? "accepted",
-    templateName: "decision",
-    templateData: {
-      context: (inputData.context ?? "").trim() || problem,
-      problem,
-      drivers: (inputData.drivers ?? "").trim(),
-      alternatives: inputData.alternatives.trim(),
-      decision: inputData.decision.trim(),
-      consequences: (inputData.consequences ?? "").trim(),
-      risks: (inputData.risks ?? "").trim(),
-      rollback: inputData.rollback.trim(),
-    },
   });
 
   return result.relativePath;

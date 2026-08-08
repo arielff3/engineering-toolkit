@@ -1,13 +1,17 @@
-export type ArtifactType =
-  | "vision"
-  | "roadmap"
-  | "research"
-  | "brief"
-  | "decision"
-  | "plan"
-  | "review"
-  | "risk"
-  | "runbook";
+/** Every artifact type, in the order the work usually happens. */
+export const ARTIFACT_TYPES = [
+  "vision",
+  "roadmap",
+  "research",
+  "brief",
+  "decision",
+  "plan",
+  "review",
+  "risk",
+  "runbook",
+] as const;
+
+export type ArtifactType = (typeof ARTIFACT_TYPES)[number];
 
 export type ArtifactStatus =
   | "draft"

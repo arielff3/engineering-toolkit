@@ -8,10 +8,12 @@ export interface ResearchInput {
   title: string;
   question: string;
   options: string;
-  evidence: string;
+  findings: string;
   recommendation: string;
   context?: string;
+  sources?: string;
   tradeoffs?: string;
+  openQuestions?: string;
   decisionToInform?: string;
   owner?: string;
   tags?: string[];
@@ -33,10 +35,10 @@ export const researchFromInput = (
       title: inputData.title,
       question: inputData.question,
       options: inputData.options,
-      evidence: inputData.evidence,
+      findings: inputData.findings,
       recommendation: inputData.recommendation,
     },
-    ["title", "question", "options", "evidence", "recommendation"],
+    ["title", "question", "options", "findings", "recommendation"],
   );
 
   const config = loadConfig(rootDir);
@@ -56,8 +58,10 @@ export const researchFromInput = (
       question: inputData.question.trim(),
       context: (inputData.context ?? "").trim(),
       options: inputData.options.trim(),
-      evidence: inputData.evidence.trim(),
+      sources: (inputData.sources ?? "").trim(),
+      findings: inputData.findings.trim(),
       tradeoffs: (inputData.tradeoffs ?? "").trim(),
+      openQuestions: (inputData.openQuestions ?? "").trim(),
       recommendation: inputData.recommendation.trim(),
       decisionToInform: (inputData.decisionToInform ?? "").trim(),
     },
@@ -94,15 +98,25 @@ export const researchCommand = async (
     validate: (value) => (value.trim() ? true : "Please list the options"),
   });
 
-  const evidence = await input({
-    message: "What evidence did you find?",
-    default: defaults.evidence ?? "",
-    validate: (value) => (value.trim() ? true : "Please describe the evidence"),
+  const sources = await input({
+    message: "What sources did you check?",
+    default: defaults.sources ?? "",
+  });
+
+  const findings = await input({
+    message: "What did you find?",
+    default: defaults.findings ?? "",
+    validate: (value) => (value.trim() ? true : "Please describe the findings"),
   });
 
   const tradeoffs = await input({
     message: "What are the trade-offs?",
     default: defaults.tradeoffs ?? "",
+  });
+
+  const openQuestions = await input({
+    message: "What is still uncertain?",
+    default: defaults.openQuestions ?? "",
   });
 
   const recommendation = await input({
@@ -126,10 +140,12 @@ export const researchCommand = async (
     title,
     question,
     options: researchOptions,
-    evidence,
+    findings,
     recommendation,
     context,
+    sources,
     tradeoffs,
+    openQuestions,
     decisionToInform,
     owner,
     tags: defaults.tags ?? [],
@@ -142,10 +158,12 @@ export const researchDefaultsFromFlags = (flags: {
   title?: string;
   question?: string;
   options?: string;
-  evidence?: string;
+  findings?: string;
   recommendation?: string;
   context?: string;
+  sources?: string;
   tradeoffs?: string;
+  openQuestions?: string;
   decisionToInform?: string;
   owner?: string;
   tag?: string | string[];
@@ -155,10 +173,12 @@ export const researchDefaultsFromFlags = (flags: {
   title: flags.title,
   question: flags.question,
   options: flags.options,
-  evidence: flags.evidence,
+  findings: flags.findings,
   recommendation: flags.recommendation,
   context: flags.context,
+  sources: flags.sources,
   tradeoffs: flags.tradeoffs,
+  openQuestions: flags.openQuestions,
   decisionToInform: flags.decisionToInform,
   owner: flags.owner,
   tags: splitList(flags.tag),
@@ -176,10 +196,12 @@ export const researchFromFlags = (
     title?: string;
     question?: string;
     options?: string;
-    evidence?: string;
+    findings?: string;
     recommendation?: string;
     context?: string;
+    sources?: string;
     tradeoffs?: string;
+    openQuestions?: string;
     decisionToInform?: string;
     owner?: string;
     tag?: string | string[];
@@ -191,10 +213,12 @@ export const researchFromFlags = (
     title: flags.title ?? "",
     question: flags.question ?? "",
     options: flags.options ?? "",
-    evidence: flags.evidence ?? "",
+    findings: flags.findings ?? "",
     recommendation: flags.recommendation ?? "",
     context: flags.context,
+    sources: flags.sources,
     tradeoffs: flags.tradeoffs,
+    openQuestions: flags.openQuestions,
     decisionToInform: flags.decisionToInform,
     owner: flags.owner,
     tags: splitList(flags.tag),

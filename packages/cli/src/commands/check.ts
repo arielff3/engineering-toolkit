@@ -1,21 +1,17 @@
 import { loadConfig } from "@engineering-toolkit/config";
-import { createCheckContext, runChecks } from "@engineering-toolkit/checks";
+import {
+  createCheckContext,
+  runChecks,
+  toCheckReport,
+  type CheckReport,
+} from "@engineering-toolkit/checks";
 
 export interface CheckOptions {
   rootDir: string;
   json?: boolean;
 }
 
-export interface CheckJsonReport {
-  result: "passed" | "failed";
-  checks: Array<{
-    id: string;
-    name: string;
-    status: string;
-    message: string;
-    suggestion?: string;
-  }>;
-}
+export type CheckJsonReport = CheckReport;
 
 const statusIcon = (status: string): string => {
   if (status === "passed") {
@@ -34,21 +30,11 @@ export const checkCommand = async (
 ): Promise<number> => {
   const config = loadConfig(options.rootDir);
   const context = createCheckContext(options.rootDir, config);
-  const { results, hasFailures } = await runChecks(context);
+  const run = await runChecks(context);
+  const { results, hasFailures } = run;
 
   if (options.json) {
-    const report: CheckJsonReport = {
-      result: hasFailures ? "failed" : "passed",
-      checks: results.map(({ check, result }) => ({
-        id: check.id,
-        name: check.name,
-        status: result.status,
-        message: result.message,
-        ...(result.suggestion ? { suggestion: result.suggestion } : {}),
-      })),
-    };
-
-    console.log(JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(toCheckReport(run), null, 2));
     return hasFailures ? 1 : 0;
   }
 

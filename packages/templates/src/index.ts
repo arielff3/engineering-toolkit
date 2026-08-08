@@ -72,13 +72,21 @@ const researchTemplate = `# Question
 
 {{options}}
 
-# Evidence
+# Sources
 
-{{evidence}}
+{{sources}}
+
+# Findings
+
+{{findings}}
 
 # Trade-offs
 
 {{tradeoffs}}
+
+# Open Questions
+
+{{openQuestions}}
 
 # Recommendation
 

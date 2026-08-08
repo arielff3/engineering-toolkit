@@ -1,5 +1,5 @@
 import { input, confirm } from "@inquirer/prompts";
-import { createArtifact } from "@engineering-toolkit/artifacts";
+import { createPlanArtifact } from "@engineering-toolkit/artifacts";
 import { loadConfig } from "@engineering-toolkit/config";
 import type { ArtifactStatus } from "@engineering-toolkit/core";
 import { parseStatus, requireFields, splitList } from "../utils/flags";
@@ -45,28 +45,24 @@ export const planFromInput = (
   const config = loadConfig(rootDir);
   const owner = inputData.owner?.trim() ?? "";
 
-  const result = createArtifact({
+  const result = createPlanArtifact({
     rootDir,
     config,
-    type: "plan",
-    title: inputData.title.trim(),
+    title: inputData.title,
+    objective: inputData.objective,
+    testing: inputData.testing,
+    monitoring: inputData.monitoring,
+    rollback: inputData.rollback,
+    scope: inputData.scope,
+    outOfScope: inputData.outOfScope,
+    dependencies: inputData.dependencies,
+    architecture: inputData.architecture,
+    tasks: inputData.tasks,
+    rollout: inputData.rollout,
     owners: owner ? [owner] : [],
     tags: inputData.tags ?? [],
     relatedArtifacts: inputData.related ?? [],
     status: inputData.status ?? "draft",
-    templateName: "plan",
-    templateData: {
-      objective: inputData.objective.trim(),
-      scope: (inputData.scope ?? "").trim(),
-      outOfScope: (inputData.outOfScope ?? "").trim(),
-      dependencies: (inputData.dependencies ?? "").trim(),
-      architecture: (inputData.architecture ?? "").trim(),
-      tasks: (inputData.tasks ?? "").trim(),
-      testing: inputData.testing.trim(),
-      monitoring: inputData.monitoring.trim(),
-      rollout: (inputData.rollout ?? "").trim(),
-      rollback: inputData.rollback.trim(),
-    },
   });
 
   return result.relativePath;

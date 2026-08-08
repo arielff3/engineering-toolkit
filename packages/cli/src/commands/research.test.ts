@@ -61,8 +61,10 @@ describe("research", () => {
       question: "Which ADR tool fits our workflow?",
       context: "We keep losing decisions in chat",
       options: "adr-tools, log4brains, plain markdown",
-      evidence: "adr-tools is unmaintained since 2022",
+      sources: "GitHub activity, adr.github.io, two internal repos",
+      findings: "adr-tools is unmaintained since 2022",
       tradeoffs: "log4brains adds a build step",
+      openQuestions: "Whether the team will keep writing them without CI",
       recommendation: "Plain markdown with a CLI wrapper",
       decisionToInform: "Whether to adopt an external ADR tool",
       owner: "ariel",
@@ -82,8 +84,14 @@ describe("research", () => {
     expect(content).toContain(
       "# Options Compared\n\nadr-tools, log4brains, plain markdown",
     );
-    expect(content).toContain("# Evidence\n\nadr-tools is unmaintained since 2022");
+    expect(content).toContain(
+      "# Sources\n\nGitHub activity, adr.github.io, two internal repos",
+    );
+    expect(content).toContain("# Findings\n\nadr-tools is unmaintained since 2022");
     expect(content).toContain("# Trade-offs\n\nlog4brains adds a build step");
+    expect(content).toContain(
+      "# Open Questions\n\nWhether the team will keep writing them without CI",
+    );
     expect(content).toContain(
       "# Recommendation\n\nPlain markdown with a CLI wrapper",
     );
@@ -92,7 +100,7 @@ describe("research", () => {
     );
   });
 
-  it("requires question, options, evidence and recommendation", () => {
+  it("requires question, options, findings and recommendation", () => {
     const rootDir = createProject();
 
     expect(() =>
@@ -100,11 +108,11 @@ describe("research", () => {
         title: "Incomplete",
         question: "",
         options: "",
-        evidence: "",
+        findings: "",
         recommendation: "",
       }),
     ).toThrow(
-      /Missing required options: --question, --options, --evidence, --recommendation/,
+      /Missing required options: --question, --options, --findings, --recommendation/,
     );
   });
 
@@ -115,14 +123,16 @@ describe("research", () => {
       title: "Queue choice",
       question: "SQS or RabbitMQ?",
       options: "SQS, RabbitMQ",
-      evidence: "SQS has no ops burden",
+      findings: "SQS has no ops burden",
       recommendation: "SQS",
     });
 
     const content = readFileSync(join(rootDir, relativePath), "utf8");
 
     expect(content).toContain("# Why It Matters\n\n_TBD_");
+    expect(content).toContain("# Sources\n\n_TBD_");
     expect(content).toContain("# Trade-offs\n\n_TBD_");
+    expect(content).toContain("# Open Questions\n\n_TBD_");
     expect(content).toContain("# Decision To Inform\n\n_TBD_");
   });
 
@@ -133,7 +143,7 @@ describe("research", () => {
       title: "Cache layer",
       question: "Do we need a cache?",
       options: "Redis, in-memory, none",
-      evidence: "p99 is 400ms without cache",
+      findings: "p99 is 400ms without cache",
       recommendation: "Start with in-memory",
       tag: ["performance,infra"],
       related: ["decision-0001-use-postgres"],
@@ -149,7 +159,7 @@ describe("research", () => {
     );
   });
 
-  it("asks the nine questions in order and writes the answers", async () => {
+  it("asks the eleven questions in order and writes the answers", async () => {
     const rootDir = createProject();
 
     const asked = scriptPrompts({
@@ -157,8 +167,10 @@ describe("research", () => {
       "What question are you trying to answer?": "SQS or RabbitMQ?",
       "Why does this matter?": "Checkout retries are dropping orders",
       "What options did you compare?": "SQS, RabbitMQ, Postgres queue",
-      "What evidence did you find?": "RabbitMQ needs a dedicated operator",
+      "What sources did you check?": "AWS pricing page, two internal incidents",
+      "What did you find?": "RabbitMQ needs a dedicated operator",
       "What are the trade-offs?": "SQS locks us into AWS",
+      "What is still uncertain?": "Whether ordering guarantees matter here",
       "What is your recommendation?": "Use SQS",
       "What decision should this research inform?": "Queue for checkout retries",
       "Owner (optional)": "ariel",
@@ -171,8 +183,10 @@ describe("research", () => {
       "What question are you trying to answer?",
       "Why does this matter?",
       "What options did you compare?",
-      "What evidence did you find?",
+      "What sources did you check?",
+      "What did you find?",
       "What are the trade-offs?",
+      "What is still uncertain?",
       "What is your recommendation?",
       "What decision should this research inform?",
       "Owner (optional)",
@@ -184,7 +198,14 @@ describe("research", () => {
     expect(content).toContain(
       "# Why It Matters\n\nCheckout retries are dropping orders",
     );
+    expect(content).toContain(
+      "# Sources\n\nAWS pricing page, two internal incidents",
+    );
+    expect(content).toContain("# Findings\n\nRabbitMQ needs a dedicated operator");
     expect(content).toContain("# Trade-offs\n\nSQS locks us into AWS");
+    expect(content).toContain(
+      "# Open Questions\n\nWhether ordering guarantees matter here",
+    );
     expect(content).toContain(
       "# Decision To Inform\n\nQueue for checkout retries",
     );
@@ -198,7 +219,7 @@ describe("research", () => {
       "Research title": "Queue choice",
       "What question are you trying to answer?": "SQS or RabbitMQ?",
       "What options did you compare?": "SQS, RabbitMQ",
-      "What evidence did you find?": "RabbitMQ needs an operator",
+      "What did you find?": "RabbitMQ needs an operator",
       "What is your recommendation?": "Use SQS",
     });
 
@@ -213,9 +234,10 @@ describe("research", () => {
       "Research title",
       "What question are you trying to answer?",
       "What options did you compare?",
-      "What evidence did you find?",
+      "What did you find?",
       "What is your recommendation?",
     ]);
+    expect(asked).toHaveLength(11);
   });
 
   it("offers flag values as prompt defaults", async () => {
@@ -225,7 +247,7 @@ describe("research", () => {
       "Research title": "Queue choice",
       "What question are you trying to answer?": "SQS or RabbitMQ?",
       "What options did you compare?": "SQS, RabbitMQ",
-      "What evidence did you find?": "RabbitMQ needs an operator",
+      "What did you find?": "RabbitMQ needs an operator",
       "What is your recommendation?": "Use SQS",
     });
 
@@ -250,7 +272,7 @@ describe("research", () => {
         title: "Cache layer",
         question: "Do we need a cache?",
         options: "Redis, none",
-        evidence: "p99 is 400ms",
+        findings: "p99 is 400ms",
         recommendation: "Start with in-memory",
         status: "maybe",
       }),

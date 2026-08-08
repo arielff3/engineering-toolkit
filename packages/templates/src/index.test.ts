@@ -112,8 +112,10 @@ describe("getTemplateFields", () => {
       { name: "question", label: "Question" },
       { name: "context", label: "Why It Matters" },
       { name: "options", label: "Options Compared" },
-      { name: "evidence", label: "Evidence" },
+      { name: "sources", label: "Sources" },
+      { name: "findings", label: "Findings" },
       { name: "tradeoffs", label: "Trade-offs" },
+      { name: "openQuestions", label: "Open Questions" },
       { name: "recommendation", label: "Recommendation" },
       { name: "decisionToInform", label: "Decision To Inform" },
     ]);

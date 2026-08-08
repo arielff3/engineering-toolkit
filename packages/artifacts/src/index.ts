@@ -9,6 +9,7 @@ import type {
   EngineeringConfig,
 } from "@engineering-toolkit/core";
 import {
+  ARTIFACT_TYPES,
   ARTIFACT_TYPE_TO_DOCUMENT_KEY,
   createArtifactId,
   nowIso,
@@ -123,24 +124,12 @@ export const parseArtifactFile = (
   };
 };
 
-const ARTIFACT_TYPES: ArtifactType[] = [
-  "vision",
-  "roadmap",
-  "research",
-  "brief",
-  "decision",
-  "plan",
-  "review",
-  "risk",
-  "runbook",
-];
-
 export const listArtifacts = (
   rootDir: string,
   config: EngineeringConfig,
   type?: ArtifactType,
 ): EngineeringArtifactFile[] => {
-  const types: ArtifactType[] = type ? [type] : ARTIFACT_TYPES;
+  const types: readonly ArtifactType[] = type ? [type] : ARTIFACT_TYPES;
 
   const artifacts: EngineeringArtifactFile[] = [];
 
@@ -176,6 +165,108 @@ export const getArtifactById = (
   const artifacts = listArtifacts(rootDir, config);
   return artifacts.find((artifact) => artifact.meta.id === id) ?? null;
 };
+
+export interface CreateDecisionArtifactInput {
+  rootDir: string;
+  config: EngineeringConfig;
+  title: string;
+  problem: string;
+  alternatives: string;
+  decision: string;
+  rollback: string;
+  context?: string;
+  drivers?: string;
+  consequences?: string;
+  risks?: string;
+  owners?: string[];
+  tags?: string[];
+  relatedArtifacts?: string[];
+  status?: ArtifactStatus;
+}
+
+export interface CreatePlanArtifactInput {
+  rootDir: string;
+  config: EngineeringConfig;
+  title: string;
+  objective: string;
+  testing: string;
+  monitoring: string;
+  rollback: string;
+  scope?: string;
+  outOfScope?: string;
+  dependencies?: string;
+  architecture?: string;
+  tasks?: string;
+  rollout?: string;
+  owners?: string[];
+  tags?: string[];
+  relatedArtifacts?: string[];
+  status?: ArtifactStatus;
+}
+
+const trimmed = (value: string | undefined): string => (value ?? "").trim();
+
+/**
+ * A decision artifact with the decision template already filled in.
+ *
+ * The mapping from answers to template placeholders lives here, not in the
+ * CLI, so every front end (CLI, MCP server) writes the same document.
+ */
+export const createDecisionArtifact = (
+  input: CreateDecisionArtifactInput,
+): CreateArtifactResult => {
+  const problem = input.problem.trim();
+
+  return createArtifact({
+    rootDir: input.rootDir,
+    config: input.config,
+    type: "decision",
+    title: input.title.trim(),
+    owners: input.owners ?? [],
+    tags: input.tags ?? [],
+    relatedArtifacts: input.relatedArtifacts ?? [],
+    status: input.status ?? "accepted",
+    templateName: "decision",
+    templateData: {
+      context: trimmed(input.context) || problem,
+      problem,
+      drivers: trimmed(input.drivers),
+      alternatives: input.alternatives.trim(),
+      decision: input.decision.trim(),
+      consequences: trimmed(input.consequences),
+      risks: trimmed(input.risks),
+      rollback: input.rollback.trim(),
+    },
+  });
+};
+
+/** A plan artifact with the plan template already filled in. */
+export const createPlanArtifact = (
+  input: CreatePlanArtifactInput,
+): CreateArtifactResult =>
+  createArtifact({
+    rootDir: input.rootDir,
+    config: input.config,
+    type: "plan",
+    title: input.title.trim(),
+    owners: input.owners ?? [],
+    tags: input.tags ?? [],
+    relatedArtifacts: input.relatedArtifacts ?? [],
+    status: input.status ?? "draft",
+    templateName: "plan",
+    templateData: {
+      objective: input.objective.trim(),
+      scope: trimmed(input.scope),
+      outOfScope: trimmed(input.outOfScope),
+      dependencies: trimmed(input.dependencies),
+      architecture: trimmed(input.architecture),
+      tasks: trimmed(input.tasks),
+      testing: input.testing.trim(),
+      monitoring: input.monitoring.trim(),
+      rollout: trimmed(input.rollout),
+      rollback: input.rollback.trim(),
+    },
+  });
 
 export const createArtifact = (
   input: CreateArtifactInput,

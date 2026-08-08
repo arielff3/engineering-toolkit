@@ -30,6 +30,7 @@ export default defineConfig({
         root,
         "packages/checks/src/index.ts",
       ),
+      "@engineering-toolkit/mcp": path.join(root, "packages/mcp/src/index.ts"),
     },
   },
 });

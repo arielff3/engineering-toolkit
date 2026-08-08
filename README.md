@@ -30,7 +30,7 @@ Every step produces a Markdown file with YAML frontmatter, committed with the pr
 - **Decisions as code.** Important decisions are versioned with the project, not lost in chat.
 - **Progressive adoption.** Useful even if you only ever run `eng decide`.
 - **Automation over documentation.** If a rule can be checked, check it.
-- **AI as reviewer.** AI challenges decisions; it does not make them.
+- **AI as reviewer.** AI challenges decisions; it does not make them. The [MCP server](#mcp-server) gives assistants the engineering memory to review against.
 - **Language and framework agnostic.** It only cares about Markdown and a config file.
 
 ## Install
@@ -66,7 +66,7 @@ The rest of this README writes `eng` for brevity.
 # 1. Create a workspace (works in an existing repo or an empty folder)
 eng init
 
-# 2. Investigate the options — prompts you through question, options, evidence, recommendation
+# 2. Investigate the options — prompts you through question, options, findings, recommendation
 eng research
 
 # 3. Record a decision — prompts you through problem, alternatives, trade-offs, rollback
@@ -236,7 +236,7 @@ eng attach --repo https://github.com/my-org/my-project
 The four guided flows, in the order the work usually happens. Each one prompts you through its questions and writes an artifact.
 
 ```bash
-eng research # question, why it matters, options, evidence, trade-offs, recommendation
+eng research # question, why it matters, options, sources, findings, trade-offs, open questions, recommendation
 eng decide   # problem, alternatives, trade-offs, decision, consequences, risks, rollback
 eng plan     # objective, scope, dependencies, tasks, testing, monitoring, rollout, rollback
 eng review   # context, analysis, checklist, risks, missing items, recommendation
@@ -251,7 +251,8 @@ eng research \
   --title "Queue for checkout retries" \
   --question "SQS or RabbitMQ for retrying failed checkouts?" \
   --options "SQS, RabbitMQ, Postgres-backed queue" \
-  --evidence "RabbitMQ needs a dedicated operator; SQS p99 is 40ms" \
+  --sources "AWS pricing page, two internal incident reports" \
+  --findings "RabbitMQ needs a dedicated operator; SQS p99 is 40ms" \
   --recommendation "Start with SQS" \
   --decision-to-inform "Queue technology for checkout" \
   --owner ariel
@@ -289,7 +290,7 @@ Required flags per command:
 
 | Command | Required |
 | --- | --- |
-| `eng research` | `--title --question --options --evidence --recommendation` |
+| `eng research` | `--title --question --options --findings --recommendation` |
 | `eng decide` | `--title --problem --alternatives --decision --rollback` |
 | `eng plan` | `--title --objective --testing --monitoring --rollback` |
 | `eng review` | `--title --context --review --recommendation` |
@@ -335,7 +336,7 @@ Placeholders per template:
 | --- | --- |
 | `vision` | `vision`, `problem`, `audience`, `principles`, `success` |
 | `roadmap` | `goal`, `milestones`, `now`, `next`, `later` |
-| `research` | `question`, `context`, `options`, `evidence`, `tradeoffs`, `recommendation`, `decisionToInform` |
+| `research` | `question`, `context`, `options`, `sources`, `findings`, `tradeoffs`, `openQuestions`, `recommendation`, `decisionToInform` |
 | `brief` | `summary`, `context`, `requirements`, `constraints`, `openQuestions` |
 | `decision` | `context`, `problem`, `drivers`, `alternatives`, `decision`, `consequences`, `risks`, `rollback` |
 | `plan` | `objective`, `scope`, `outOfScope`, `dependencies`, `architecture`, `tasks`, `testing`, `monitoring`, `rollout`, `rollback` |
@@ -500,11 +501,65 @@ jobs:
 
 A dedicated GitHub Action and PR comments are planned for v0.3.
 
+## MCP server
+
+> AI made code cheaper. Bad decisions are still expensive.
+
+`@engineering-toolkit/mcp` exposes a workspace to AI assistants over the [Model Context Protocol](https://modelcontextprotocol.io), so an agent can read the engineering memory before writing the next line of code. It answers questions like *"before I implement this, which decisions should I consider?"* from real artifacts instead of chat history.
+
+Point any MCP client at it:
+
+```json
+{
+  "mcpServers": {
+    "engineering-toolkit": {
+      "command": "npx",
+      "args": ["@engineering-toolkit/mcp", "--cwd", "."]
+    }
+  }
+}
+```
+
+Before publishing, run it from a build: `node packages/mcp/dist/bin.js --cwd .`
+
+`--cwd` is the workspace directory holding `.engineering/config.yml`. The server speaks over stdio and writes nothing to stdout except protocol traffic.
+
+### Tools
+
+| Tool | Reads/writes | Answers |
+| --- | --- | --- |
+| `engineering_workspace_summary` | read | What is the state of this project? Counts, accepted decisions, active plans, open risks, check result |
+| `engineering_list_artifacts` | read | What has been recorded? Optionally filtered by `type` |
+| `engineering_get_artifact` | read | What does artifact `id` actually say, in full |
+| `engineering_run_checks` | read | What is still missing? Same report as `eng check --json` |
+| `engineering_create_artifact` | write | Record any artifact type from template `data` |
+| `engineering_create_decision` | write | Record a technical decision |
+| `engineering_create_plan` | write | Record an implementation plan |
+
+Read tools are annotated `readOnlyHint`. The write tools only ever add files — nothing in this package edits or deletes an artifact, and nothing touches application code.
+
+The server ships MCP `instructions` telling the client to summarize the workspace first, cite the artifacts it used, and leave the decision to the user. The intended flow:
+
+```text
+1. engineering_workspace_summary   -> what is already decided
+2. engineering_get_artifact        -> read the reasoning that matters
+3. propose, question, point out gaps
+4. engineering_create_plan         -> only once the user asks for it
+5. engineering_run_checks          -> what the new plan still misses
+```
+
+### Notes
+
+- **Tool names use underscores**, not the dots in the original design (`engineering.list_artifacts`). Claude and other clients require tool names to match `^[a-zA-Z0-9_-]{1,64}$`, and clients that prefix server tools would produce an invalid name from a dotted one. A test asserts every name matches that pattern.
+- **Handlers are thin.** Every rule about what an artifact contains lives in `artifacts`, `templates` and `checks`, so the CLI and the MCP server cannot drift: `eng decide` and `engineering_create_decision` call the same function.
+- **v0.1 is read-first.** No editing, no deleting, no code generation, no GitHub integration.
+
 ## Repository layout
 
 ```text
 packages/
   cli/        Command-line interface (commander + inquirer)
+  mcp/        Model Context Protocol server for AI assistants
   core/       Domain types and contracts, no I/O
   config/     Config loading and validation (zod)
   templates/  Built-in artifact templates
@@ -538,6 +593,8 @@ pnpm clean
 | --- | --- | --- |
 | v0.1 | CLI foundation: `init`, `decide`, `plan`, `review`, `list`, `show`, `check` | done |
 | v0.2 | Guided flow for every command, per-command interactive switch, custom templates, tests, `create` / `new` / `attach` | done |
+| v0.2 | [MCP server](#mcp-server): read tools, artifact creation, checks, workspace summary | done |
+| v0.3 | MCP: controlled artifact editing, filters by status/tag/owner, text search, artifact relationships | next |
 | v0.3 | GitHub Action, PR comments, richer CLI output | next |
 | v0.4 | Plugin system for external checks and integrations | planned |
 | v0.5 | VS Code extension | planned |

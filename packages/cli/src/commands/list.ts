@@ -1,4 +1,5 @@
 import type { ArtifactType } from "@engineering-toolkit/core";
+import { ARTIFACT_TYPES } from "@engineering-toolkit/core";
 import { listArtifacts } from "@engineering-toolkit/artifacts";
 import { loadConfig } from "@engineering-toolkit/config";
 import { relative } from "node:path";
@@ -8,29 +9,17 @@ export interface ListOptions {
   type?: ArtifactType;
 }
 
-const artifactTypes = [
-  "vision",
-  "roadmap",
-  "research",
-  "brief",
-  "decision",
-  "plan",
-  "review",
-  "risk",
-  "runbook",
-] as const;
-
 export const parseArtifactType = (value?: string): ArtifactType | undefined => {
   if (!value) {
     return undefined;
   }
 
-  if (artifactTypes.includes(value as ArtifactType)) {
+  if (ARTIFACT_TYPES.includes(value as ArtifactType)) {
     return value as ArtifactType;
   }
 
   throw new Error(
-    `Invalid artifact type "${value}". Expected one of: ${artifactTypes.join(", ")}`,
+    `Invalid artifact type "${value}". Expected one of: ${ARTIFACT_TYPES.join(", ")}`,
   );
 };
 

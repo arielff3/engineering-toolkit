@@ -264,6 +264,34 @@ export const builtInChecks: EngineeringCheck[] = [
   ownerCheck,
 ];
 
+export interface CheckReportEntry {
+  id: string;
+  name: string;
+  status: CheckStatus;
+  message: string;
+  suggestion?: string;
+}
+
+export interface CheckReport {
+  result: "passed" | "failed";
+  checks: CheckReportEntry[];
+}
+
+/**
+ * The serializable form of a check run, shared by `eng check --json` and the
+ * MCP server so both report the same thing.
+ */
+export const toCheckReport = (run: RunChecksResult): CheckReport => ({
+  result: run.hasFailures ? "failed" : "passed",
+  checks: run.results.map(({ check, result }) => ({
+    id: check.id,
+    name: check.name,
+    status: result.status,
+    message: result.message,
+    ...(result.suggestion ? { suggestion: result.suggestion } : {}),
+  })),
+});
+
 export const createCheckContext = (
   rootDir: string,
   config: EngineeringConfig,

@@ -236,8 +236,10 @@ const main = async (): Promise<void> => {
     .option("--question <text>", "Question you are trying to answer")
     .option("--context <text>", "Why this matters")
     .option("--options <text>", "Options compared")
-    .option("--evidence <text>", "Evidence found")
+    .option("--sources <text>", "Sources checked")
+    .option("--findings <text>", "What you found")
     .option("--tradeoffs <text>", "Trade-offs")
+    .option("--open-questions <text>", "What is still uncertain")
     .option("--recommendation <text>", "Recommendation")
     .option(
       "--decision-to-inform <text>",
@@ -267,7 +269,7 @@ const main = async (): Promise<void> => {
             "title",
             "question",
             "options",
-            "evidence",
+            "findings",
             "recommendation",
           ],
         };
